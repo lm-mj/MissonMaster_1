@@ -480,8 +480,13 @@ export function App() {
 
   const playMissionCompleteVoice = async (isBonus: boolean) => {
     try {
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      if (!apiKey) {
+        console.warn("Gemini API Key is missing. TTS disabled.");
+        return;
+      }
       const phrase = isBonus ? "보너스 스티커를 획득했어! 정말 대단해!" : encouragingPhrases[Math.floor(Math.random() * encouragingPhrases.length)];
-      const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+      const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
         contents: [{ parts: [{ text: phrase }] }],
@@ -512,6 +517,11 @@ export function App() {
   const generateAiMessage = async (logs: MissionLog[]) => {
     if (!childProfile.name) return;
     try {
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      if (!apiKey) {
+        console.warn("Gemini API Key is missing. AI Message disabled.");
+        return;
+      }
       const today = new Date();
       const currentMonthLogs = logs.filter(log => log.date.startsWith(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`));
 
@@ -522,7 +532,7 @@ export function App() {
 
       const prompt = `아이 이름: ${childProfile.name}. 이번 달 미션 수행 데이터: ${JSON.stringify(missionStats)}. 이 데이터를 바탕으로 부모님께 드리는 따뜻한 격려와 조언을 한 줄(30자 이내)로 작성해줘.`;
 
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: prompt,
