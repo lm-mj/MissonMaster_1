@@ -428,6 +428,7 @@ export function App() {
   // PIN Change State
   const [pinChangeStep, setPinChangeStep] = useState<PinChangeStep>('none');
   const [tempNewPin, setTempNewPin] = useState('');
+  const [isPreviewPinVisible, setIsPreviewPinVisible] = useState(false);
 
   useEffect(() => {
     const savedMissions = localStorage.getItem(MISSIONS_KEY);
@@ -647,12 +648,34 @@ export function App() {
       else if (nextInput.length === 4) setTimeout(() => setPinInput(''), 500);
     } else if (pinChangeStep === 'current') {
       if (nextInput === currentSavedPin) { setPinChangeStep('new'); setPinInput(''); }
-      else if (nextInput.length === 4) { alert('PIN이 일치하지 않습니다.'); setPinInput(''); }
-    } else if (pinChangeStep === 'new' && nextInput.length === 4) { setTempNewPin(nextInput); setPinChangeStep('verify'); setPinInput(''); }
-    else if (pinChangeStep === 'verify' && nextInput.length === 4) {
-      if (nextInput === tempNewPin) { setPinChangeStep('confirm'); setPinInput(''); }
-      else { alert('비밀번호가 다릅니다.'); setPinChangeStep('new'); setPinInput(''); }
+      else if (nextInput.length === 4) { alert('현재 PIN이 일치하지 않습니다.'); setPinInput(''); }
+    } else if (pinChangeStep === 'new' && nextInput.length === 4) {
+      setTempNewPin(nextInput);
+      setPinChangeStep('verify');
+      setPinInput('');
+    } else if (pinChangeStep === 'verify' && nextInput.length === 4) {
+      if (nextInput === tempNewPin) {
+        setPinChangeStep('confirm');
+        setPinInput('');
+      } else {
+        alert('입력하신 새 비밀번호가 서로 다릅니다. 다시 시도해주세요.');
+        setPinChangeStep('new');
+        setPinInput('');
+        setTempNewPin('');
+      }
+    } else if (pinChangeStep === 'confirm' && nextInput.length === 4) {
+      // confirm 단계에서는 번호 입력이 아니라 특정 버튼으로 처리할 수도 있지만, 
+      // 여기서는 handlePinInput이 호출되지 않도록 UI에서 막을 예정입니다.
     }
+  };
+
+  const handleConfirmPinChange = () => {
+    localStorage.setItem(PIN_KEY, tempNewPin);
+    alert('비밀번호가 안전하게 변경되었습니다.');
+    setPinChangeStep('none');
+    setTempNewPin('');
+    setPinInput('');
+    setMode('child');
   };
 
   const activeMission = missions.find(m => m.id === activeMissionId);
@@ -748,17 +771,65 @@ export function App() {
         <div className="min-h-screen bg-indigo-50 flex flex-col items-center justify-center p-4 fixed inset-0 z-[130]">
           <div className="bg-white p-6 md:p-10 rounded-[32px] shadow-xl w-full max-w-sm text-center border border-indigo-100">
             <div className="mb-6">
-              {mode === 'timeWarpAuth' ? <><FastForward className="text-amber-500 mx-auto mb-4" size={32} /><h2 className="text-2xl font-black mb-1">타임워프</h2></> : <><Lock className="text-indigo-600 mx-auto mb-4" size={32} /><h2 className="text-2xl font-black mb-1">보안 확인</h2></>}
+              {mode === 'timeWarpAuth' ? (
+                <><FastForward className="text-amber-500 mx-auto mb-4" size={32} /><h2 className="text-2xl font-black mb-1">타임워프</h2></>
+              ) : (
+                <>
+                  <Lock className="text-indigo-600 mx-auto mb-4" size={32} />
+                  <h2 className="text-2xl font-black mb-1">
+                    {pinChangeStep === 'none' && '보안 확인'}
+                    {pinChangeStep === 'current' && '현재 비밀번호 입력'}
+                    {pinChangeStep === 'new' && '새 비밀번호 입력'}
+                    {pinChangeStep === 'verify' && '새 비밀번호 확인'}
+                    {pinChangeStep === 'confirm' && '설정 확인'}
+                  </h2>
+                </>
+              )}
             </div>
-            <div className="flex justify-center gap-3 mb-8">
-              {[0, 1, 2, 3].map(i => <div key={i} className={`w-3 h-3 rounded-full border-2 transition-all duration-300 ${pinInput.length > i ? 'bg-indigo-500 border-indigo-500 scale-125' : 'border-gray-200'}`} />)}
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => <button key={n} onClick={() => handlePinInput(n.toString())} className="h-14 rounded-2xl bg-gray-50 text-xl font-black text-gray-600 hover:bg-indigo-100 active:scale-95 transition-all">{n}</button>)}
-              <button onClick={() => setPinInput('')} className="h-14 rounded-2xl text-gray-300 hover:bg-gray-50 flex items-center justify-center"><RotateCcw size={24} /></button>
-              <button onClick={() => handlePinInput("0")} className="h-14 rounded-2xl bg-gray-50 text-xl font-black text-gray-600 hover:bg-indigo-100 active:scale-95 transition-all">0</button>
-              <button onClick={() => { if (pinChangeStep !== 'none') { setPinChangeStep('none'); setPinInput(''); } else setMode('child'); }} className="h-14 rounded-2xl text-gray-300 hover:bg-gray-50 flex items-center justify-center"><ArrowLeft size={24} /></button>
-            </div>
+
+            {pinChangeStep === 'confirm' ? (
+              <div className="space-y-6 animate-in zoom-in-95 duration-200">
+                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 relative group">
+                  <p className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">새로운 비밀번호</p>
+                  <div className="flex items-center justify-center gap-3">
+                    <span className="text-3xl font-black tracking-widest text-indigo-600">
+                      {isPreviewPinVisible ? tempNewPin : '****'}
+                    </span>
+                    <button onClick={() => setIsPreviewPinVisible(!isPreviewPinVisible)} className="p-2 text-slate-300 hover:text-indigo-500 transition-colors">
+                      {isPreviewPinVisible ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
+                </div>
+                <p className="text-sm font-bold text-slate-500 leading-relaxed">
+                  위 번호로 비밀번호를 변경하시겠습니까?<br />변경 후에는 새 번호로 입장해야 합니다.
+                </p>
+                <div className="flex gap-3">
+                  <button onClick={() => { setPinChangeStep('none'); setTempNewPin(''); setPinInput(''); setMode('child'); }} className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black hover:bg-slate-200 transition-colors">취소</button>
+                  <button onClick={handleConfirmPinChange} className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-colors">변경 확인</button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex justify-center gap-3 mb-8">
+                  {[0, 1, 2, 3].map(i => <div key={i} className={`w-3 h-3 rounded-full border-2 transition-all duration-300 ${pinInput.length > i ? 'bg-indigo-500 border-indigo-500 scale-125' : 'border-gray-200'}`} />)}
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => <button key={n} onClick={() => handlePinInput(n.toString())} className="h-14 rounded-2xl bg-gray-50 text-xl font-black text-gray-600 hover:bg-indigo-100 active:scale-95 transition-all">{n}</button>)}
+                  <button onClick={() => setPinInput('')} className="h-14 rounded-2xl text-gray-300 hover:bg-gray-50 flex items-center justify-center"><RotateCcw size={24} /></button>
+                  <button onClick={() => handlePinInput("0")} className="h-14 rounded-2xl bg-gray-50 text-xl font-black text-gray-600 hover:bg-indigo-100 active:scale-95 transition-all">0</button>
+                  <button onClick={() => { if (pinChangeStep !== 'none') { setPinChangeStep('none'); setPinInput(''); setIsPreviewPinVisible(false); } else setMode('child'); }} className="h-14 rounded-2xl text-gray-300 hover:bg-gray-50 flex items-center justify-center"><ArrowLeft size={24} /></button>
+                </div>
+
+                {pinChangeStep === 'none' && mode !== 'timeWarpAuth' && (
+                  <button
+                    onClick={() => { setPinChangeStep('current'); setPinInput(''); }}
+                    className="mt-6 w-full py-3 text-xs font-black text-indigo-400 hover:text-indigo-600 transition-colors border-t border-indigo-50 pt-6"
+                  >
+                    비밀번호(PIN) 변경하기
+                  </button>
+                )}
+              </>
+            )}
           </div>
         </div>
       )}
