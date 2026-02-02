@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>미션 마스터</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;700;900&display=swap');
+        body {
+            font-family: 'Pretendard', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #F8FAFC;
+        }
+        /* 로딩 화면 스타일 */
+        #loading-screen {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #F8FAFC;
+            z-index: 9999;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #E0E7FF;
+            border-top: 4px solid #4F46E5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    <script type="importmap">
+    {
+      "imports": {
+        "@google/genai": "https://esm.sh/@google/genai@^1.38.0",
+        "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
+        "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+        "react/": "https://esm.sh/react@^19.2.3/",
+        "react": "https://esm.sh/react@^19.2.3"
+      }
+    }
+    </script>
+</head>
+<body>
+    <div id="loading-screen">
+        <div class="spinner"></div>
+    </div>
+    <div id="root"></div>
+    <!-- 앱의 핵심 로직인 index.tsx를 불러옵니다. -->
+    <script type="module" src="index.tsx"></script>
+    <script>
+        // 앱이 로드되면 로딩 화면을 제거합니다.
+        window.addEventListener('load', () => {
+            const screen = document.getElementById('loading-screen');
+            if (screen) screen.style.display = 'none';
+        });
+    </script>
+</body>
+</html>
